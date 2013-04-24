@@ -1,0 +1,183 @@
+<?php
+function getProductsNumber($limit,$results,$lat1,$lon1,$collection){
+							$numProd=0;
+							$class=new Mage_Catalog_Block_Product_List;
+				$collection=$class->getProductCollection();
+				foreach($collection AS $product){
+					foreach ($results as $att) {
+						$att= $att['attribute_code'];
+						$value=$product->getData();
+						$id=$value['entity_id'];
+						$dataArray= Mage::getModel('catalog/product')->load($id)->getData();
+						$location2=$dataArray[$att];
+						$tmp2=explode('/',$location);
+						$latlng=$tmp2[0];
+						$latlng=explode(',',trim($latlng,' '));
+						$lat2 = $latlng[0];
+						$lon2= $latlng[1];
+						$distance = (3958*3.1415926*sqrt(($lat2-$lat1)*($lat2-$lat1) + cos($lat2/57.29578)*cos($lat1/57.29578)*($lon2-$lon1)*($lon2-$lon1))/180);
+						$rndDst = round($distance, 3);
+						
+						if($rndDst<$limit){
+								$numProd++;
+							}
+	
+					}
+				}
+				return $numProd;
+}
+function getUrlWithout($getNames){
+      $url = "http" . ((!empty($_SERVER['HTTPS'])) ? "s" : "") . "://".$_SERVER['SERVER_NAME'].$_SERVER['REQUEST_URI'];
+      $questionMarkExp = explode("?", $url);
+      $urlArray = explode("&", $questionMarkExp[1]);
+      $retUrl=$questionMarkExp[0];
+      $retGet="";
+      $found=array();
+      foreach($getNames as $id => $name){
+            foreach ($urlArray as $key=>$value){
+                if(isset($_GET[$name]) && $value==$name."=".$_GET[$name])
+                    unset($urlArray[$key]);
+          }
+      }
+      $urlArray = array_values($urlArray);
+      foreach ($urlArray as $key => $value){
+          if($key<sizeof($urlArray) && $retGet!=="")
+              $retGet.="&";
+          $retGet.=$value;
+      }
+      return $retUrl."?".$retGet;
+  } 
+?>
+<?php if($this->canShowBlock()): ?>
+<div class="block block-layered-nav">
+    <div class="block-title">
+        <strong><span><?php echo $this->__('Shop By') ?></span></strong>
+    </div>
+    <div class="block-content">
+         <?
+                 	if(isset($_GET["distance"])){
+						$distance=$_GET["distance"];
+						$distParam='distance='.$distance;
+						$initUrl=$this->getClearUrl();
+						$url=str_replace($distParam, "", $initUrl);
+						foreach ($_GET as $key => $value) {
+							if($key!='q' && $key!='distance'){
+								$url.='&'.$key.'='.$value;
+							}
+						}
+					}else{
+							$url=$this->getClearUrl();
+							foreach ($_GET as $key => $value) {
+								if($key!='q'){
+									$url.='&'.$key.'='.$value;
+								} 
+							}
+						}
+ 
+?>
+<?php 
+
+$_filters = $this->getLayer()->getState()->getFilters(); 
+
+?>
+<?php if(!empty($_filters) OR isset($_GET["distance"])): ?>
+<div class="currently">
+    <p class="block-subtitle"><?php echo $this->__('Currently Shopping by:') ?></p>
+    <ol>
+    <?php foreach ($_filters as $_filter): ?>
+        <li>
+            <span class="label"><?php echo $this->__($_filter->getName()) ?>:</span> <span class="value"><?php echo $this->stripTags($_filter->getLabel()) ?></span>
+            <?php
+                $clearLinkUrl = $_filter->getClearLinkUrl();
+                if ($clearLinkUrl):
+            ?>
+                <a  class="btn-previous" href="<?php echo $_filter->getRemoveUrl() ?>" title="<?php echo $this->__('Previous') ?>"><?php echo $this->__('Previous') ?></a>
+                <a  class="btn-remove" title="<?php echo $this->escapeHtml($_filter->getFilter()->getClearLinkText()) ?>" href="<?php echo $clearLinkUrl ?>"><?php echo $this->escapeHtml($_filter->getFilter()->getClearLinkText()) ?></a>
+            <?php else: ?>
+                <a  class="btn-remove" href="<?php echo $_filter->getRemoveUrl() ?>" title="<?php echo $this->__('Remove This Item') ?>"><?php echo $this->__('Remove This Item') ?></a>
+            <?php endif; ?>
+        </li>
+    <?php endforeach; 
+    	           if(isset($_GET["distance"])){
+                			?>
+
+                			<li>
+                				<span class="label">Distance</span>
+                			<span class="value"><?php echo $_GET["distance"]; ?> km</span>
+                			<a class="btn-remove" title="Remove This Item" href="<?php echo $url; ?>"title="<?php echo $this->__('Remove This Item') ?>"><?php echo $this->__('Remove This Item') ?></a>
+                			</li>
+
+                			<?
+							
+                		}
+    
+    ?>
+    	
+    </ol>
+</div>
+<?php endif; ?>
+
+        <?php if ($this->getLayer()->getState()->getFilters() OR isset($_GET["distance"])): ?>
+            <div class="actions"><a href="<?php echo $url ?>"><?php echo $this->__('Clear All') ?></a></div>
+        <?php endif; ?>
+        <?php if($this->canShowOptions()): ?>
+            <p class="block-subtitle"><?php echo $this->__('Shopping Options') ?></p>
+            <dl id="narrow-by-list">
+                <?php $_filters = $this->getFilters() ?>
+                <?php foreach ($_filters as $_filter): ?>
+                <?php if($_filter->getItemsCount()): ?>
+                    <dt><?php echo $this->__($_filter->getName()) ?></dt>
+                    <dd><?php echo $_filter->getHtml() ?></dd>
+                <?php endif; ?>
+                <?php endforeach; 
+                		$options=Mage::getStoreConfig('youmaps/youmaps_group/youmaps_distance',Mage::app()->getStore());
+                		$optionsArray = explode(',',$options);
+                ?>
+                	
+                
+                <?
+                	if(isset($_GET["distance"])){
+						$distance=$_GET["distance"];
+						$distParam='distance='.$distance;
+						$initUrl=$this->getClearUrl();
+						$url=str_replace($distParam, "", $initUrl);
+						foreach ($_GET as $key => $value) {
+							if($key!='q' && $key!='distance' && $key!='p'){
+								$url.='&'.$key.'='.$value;
+							}
+						}
+					}else{
+							$url=getUrlWithout(array('p'));
+							foreach ($_GET as $key => $value) {
+								if($key!='q' && $key!='p'){
+									$url.='&'.$key.'='.$value;
+								} 
+							}
+						}
+					if(!isset($_GET["distance"])){
+						?>
+						<dt>Distance</dt>
+						<dd>
+                	<ol>
+						<?
+                	foreach($optionsArray AS $option){
+                		
+
+                		
+               	?>
+               			<li><a href="<?php echo $url.'&distance='.str_replace(' ','',$option); ?>"><?php echo $option; ?> km</a></li>
+               	<?
+					}
+					?>
+					</ol>
+                </dd>
+					<?
+                	}
+                ?>	
+                
+            </dl>
+            <script type="text/javascript">decorateDataList('narrow-by-list')</script>
+        <?php endif; ?>
+    </div>
+</div>
+<?php endif; ?>

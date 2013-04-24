@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+    <tabs>
+        <youmaps translate="label" module="youmaps">
+            <label>Yougento Extensions</label>
+            <sort_order>100</sort_order>
+        </youmaps>
+    </tabs>
+    <sections>
+        <youmaps translate="label" module="youmaps">
+            <label>Youmaps Options</label>
+            <tab>youmaps</tab>
+            <sort_order>1000</sort_order>
+            <show_in_default>1</show_in_default>
+            <show_in_website>1</show_in_website>
+            <show_in_store>1</show_in_store>
+ 
+            <groups>
+                <youmaps_group translate="label" module="youmaps">
+                    <label>Youmaps Options</label>
+                    <frontend_type>text</frontend_type>
+                    <sort_order>1000</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>1</show_in_store>
+ 
+                    <fields>
+                        <youmaps_apikey translate="label">
+                            <label>API Key for Google Maps: </label>
+                            <comment>Please input your API Key</comment>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>1</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </youmaps_apikey>
+                        <youmaps_message>
+						    <label>Select how to display the map on product page:</label>
+						    <frontend_type>select</frontend_type>
+						    <source_model>youmaps/frontendopt</source_model>                           
+						    <sort_order>2</sort_order>
+						    <show_in_default>1</show_in_default>
+						    <show_in_website>1</show_in_website>
+						    <show_in_store>1</show_in_store>                    
+						</youmaps_message>
+						<youmaps_search>
+						    <label>Select the default distance to use on Youmaps search in kilometers:</label>
+						    <frontend_type>text</frontend_type>
+						    <source_model>youmaps/frontendopt</source_model>                           
+						    <sort_order>3</sort_order>
+						    <show_in_default>1</show_in_default>
+						    <show_in_website>1</show_in_website>
+						    <show_in_store>1</show_in_store>                    
+						</youmaps_search>
+						<youmaps_distance>
+						    <label>Select the desired distance options for search filtering separated by commas in kilometers:</label>
+						    <frontend_type>text</frontend_type>                          
+						    <sort_order>4</sort_order>
+						    <show_in_default>1</show_in_default>
+						    <show_in_website>1</show_in_website>
+						    <show_in_store>1</show_in_store>                    
+						</youmaps_distance>
+						<youmaps_search_map_display>
+                            <label>Display map on search: </label>
+                            <frontend_type>select</frontend_type>
+                            <sort_order>9</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                        </youmaps_search_map_display>
+                    </fields>
+                </youmaps_group>
+                 <youmaps_group2 translate="label" module="youmaps">
+                    <label>Map Dimensions</label>
+                    <frontend_type>text</frontend_type>
+                    <sort_order>2000</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>1</show_in_store>
+                    
+                    <fields>
+                    	=<youmaps_product_map_width>
+							<label>Input the desired width for the product location map in pixels:</label>
+						    <frontend_type>text</frontend_type>                          
+						    <sort_order>5</sort_order>
+						    <show_in_default>1</show_in_default>
+						    <show_in_website>1</show_in_website>
+						    <show_in_store>1</show_in_store>  
+						</youmaps_product_map_width>
+						<youmaps_product_map_height>
+							<label>Input the desired height for the product location map in pixels:</label>
+						    <frontend_type>text</frontend_type>                          
+						    <sort_order>6</sort_order>
+						    <show_in_default>1</show_in_default>
+						    <show_in_website>1</show_in_website>
+						    <show_in_store>1</show_in_store>  
+						</youmaps_product_map_height>
+						<youmaps_search_map_width>
+							<label>Input the desired width for the search results map in pixels:</label>
+						    <frontend_type>text</frontend_type>                          
+						    <sort_order>7</sort_order>
+						    <show_in_default>1</show_in_default>
+						    <show_in_website>1</show_in_website>
+						    <show_in_store>1</show_in_store>  
+						</youmaps_search_map_width>
+						<youmaps_search_map_height>
+							<label>Input the desired height for the search results map in pixels:</label>
+						    <frontend_type>text</frontend_type>                          
+						    <sort_order>8</sort_order>
+						    <show_in_default>1</show_in_default>
+						    <show_in_website>1</show_in_website>
+						    <show_in_store>1</show_in_store>  
+						</youmaps_search_map_height>
+                    </fields>
+                 </youmaps_group2>
+            </groups>
+        </youmaps>
+    </sections>
+</config>

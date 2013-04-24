@@ -1,0 +1,531 @@
+			<script type="text/javascript"
+		      src="http://maps.googleapis.com/maps/api/js?key=<?echo Mage::getStoreConfig('youmaps/youmaps_group/youmaps_apikey',Mage::app()->getStore())?>&sensor=false">
+		    </script>
+
+			<? 
+			if(Mage::getStoreConfig('youmaps/youmaps_group/youmaps_search_map_width',Mage::app()->getStore())!=NULL){
+				$width=Mage::getStoreConfig('youmaps/youmaps_group/youmaps_search_map_width',Mage::app()->getStore());
+			}
+			else{
+				$width="480";
+			}
+			if(Mage::getStoreConfig('youmaps/youmaps_group/youmaps_search_map_height',Mage::app()->getStore())!=NULL){
+				$height=Mage::getStoreConfig('youmaps/youmaps_group/youmaps_search_map_height',Mage::app()->getStore());
+			}
+			else{
+				$height="280";
+			}
+			$displayMap=Mage::getStoreConfig('youmaps/youmaps_group/youmaps_search_map_display',Mage::app()->getStore());
+			if($displayMap==1){
+				?>
+				     		 <style type="text/css">
+				#map_container { height:300px; width:400px;margin:0;}
+				
+			</style>
+				<div id="map_container"><div id="map_canvas" style="width:<? echo $width; ?>px;height:<? echo $height; ?>px;"></div></div>
+				<?
+			}
+			?>
+			
+<?php
+
+    $_productCollection=$this->getLoadedProductCollection();
+	$allProds=$_productCollection->getAllIds();
+    $_helper = $this->helper('catalog/output');
+		        $addr = urlencode($_GET["q"]);
+	        $url = 'http://maps.googleapis.com/maps/api/geocode/json?address='.$addr.'&sensor=false';
+			$ch = curl_init();
+	
+			    curl_setopt($ch, CURLOPT_AUTOREFERER, TRUE);
+			    curl_setopt($ch, CURLOPT_HEADER, 0);
+			    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+			    curl_setopt($ch, CURLOPT_URL, $url);
+			    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);       
+			
+			    $data = curl_exec($ch);
+			    curl_close($ch);
+	        $records = json_decode($data,true);
+			$myLct = $records['results'][0]['geometry']['location']['lat'].', '.$records['results'][0]['geometry']['location']['lng'];
+			$lat1 = $records['results'][0]['geometry']['location']['lat'];
+			$lon1 = $records['results'][0]['geometry']['location']['lng'];
+			$resource = Mage::getSingleton('core/resource');
+		    $readConnection = $resource->getConnection('core_read');
+		    $query = 'SELECT attribute_code FROM eav_attribute WHERE frontend_input="youmap"';
+		    $results = $readConnection->fetchAll($query);
+			if(isset($_GET["distance"])){
+				$limit =(float)$_GET["distance"];
+			}else{
+				$limit=(float)Mage::getStoreConfig('youmaps/youmaps_group/youmaps_search',Mage::app()->getStore());
+			}
+			$items=array();
+			$collection=$_productCollection;
+			$model = Mage::getModel('catalog/product');
+			foreach($allProds AS $product){
+				$model->load($product);
+				foreach ($results as $att) {
+					$att= $att['attribute_code'];
+					//$value=$product->getData();
+					//$id=$value['entity_id'];
+					$dataArray= Mage::getModel('catalog/product')->load($product)->getData();
+					$location=$dataArray[$att];
+					$tmp=explode('/',$location);
+					$latlng=$tmp[0];
+					$latlng=explode(',',trim($latlng,' '));
+					$lat2 = $latlng[0];
+					$lon2= $latlng[1];
+					$distance = (3958*3.1415926*sqrt(($lat2-$lat1)*($lat2-$lat1) + cos($lat2/57.29578)*cos($lat1/57.29578)*($lon2-$lon1)*($lon2-$lon1))/180);
+					$rndDst = round($distance, 6);
+					if($rndDst<$limit){
+							if(isset($_GET['order']) && $_GET['order']!='distance' && $_GET['order']!='relevance' && $_GET['order']!='position'){
+								$order=$_GET['order'];
+								if(isset($dataArray[$order])){
+									$orderVal=$dataArray[$order];
+									if(array_key_exists($orderVal, $items) && is_numeric($orderVal)){
+										$orderVal = (float)$orderVal+(mt_rand(1,99) / 100);
+									}
+									$items[(string)$orderVal]=Mage::getModel('catalog/product')->load($product);
+								}
+							}else{
+								$orderVal=(string)$rndDst;
+									if(array_key_exists($orderVal, $items) && is_numeric($orderVal)){
+										$orderVal = (float)$orderVal+(mt_rand(1,99) / 1000);
+									}
+								$nRndDst=(string)$orderVal;
+								$items[$nRndDst]=Mage::getModel('catalog/product')->load($product);
+							}
+						}
+
+				}
+			}
+			ksort($items);
+			if(isset($_GET['dir'])){
+				if($_GET['dir']=='desc')
+				{
+					$items=array_reverse($items);
+				}
+			}
+						if(isset($_GET["distance"])){
+							$numProd=0;
+					$limit =(float)$_GET["distance"];
+				$collection2=Mage::getModel('catalog/product')->getCollection();
+				foreach($collection2 AS $product){
+					foreach ($results as $att) {
+						$att2= $att['attribute_code'];
+						$value2=$product->getData();
+						$id=$value2['entity_id'];
+						$dataArray2= Mage::getModel('catalog/product')->load($id)->getData();
+						$location2=$dataArray2[$att2];
+						$tmp2=explode('/',$location2);
+						$latlng2=$tmp2[0];
+						$latlng2=explode(',',trim($latlng2,' '));
+						$lat22 = $latlng2[0];
+						$lon22= $latlng2[1];
+						$distance2 = (3958*3.1415926*sqrt(($lat22-$lat1)*($lat22-$lat1) + cos($lat22/57.29578)*cos($lat1/57.29578)*($lon22-$lon1)*($lon22-$lon1))/180);
+						$rndDst2 = round($distance2, 3);
+						if($rndDst2<$limit){
+								$numProd++;
+							}
+	
+					}
+				}
+			}
+				$collectionSize = (int) $this->_productCollection->getsize();
+								   	if(isset($_GET["distance"])){
+								$collectionSize=$numProd;
+						}
+		       	foreach (Mage::getSingleton('Mage_Catalog_Block_Product_List_Toolbar')->getAvailableLimit() as $key => $value) {
+					   if(Mage::getSingleton('Mage_Catalog_Block_Product_List_Toolbar')->isLimitCurrent($key)){
+					   		$_limit=$value;
+					   }
+				   }
+			       if (0 === $collectionSize) {
+		               $pageSize= 1;
+		           }
+				   
+		           elseif($_limit<$collectionSize) {
+		               $pageSize= ceil($collectionSize/$_limit);
+		           }
+		           else{
+		               $pageSize= 1;
+			}
+				   $totalSize=$this->_productCollection->getsize();
+				   if(isset($_GET['p']) && $_GET['p']>1){
+				   		$prodCount=(($_GET['p']-1)*$_limit)+1;
+					   $lastProd=(($_GET['p']-1)*$_limit)+count($this->_productCollection);
+				   }else{
+				   	$prodCount=1;
+					$lastProd=$_limit;
+				   }
+				   	if(isset($_GET["distance"])){
+								$totalSize=$numProd;
+						}
+					
+					$items=array_slice($items,($prodCount-1),($lastProd));
+
+			?>
+			<div class="category-products">
+<?php if(count($items)!=0): ?>
+<div class="toolbar">
+    <div class="pager">
+        <p class="amount">
+            <?php if($pageSize>1): ?>
+                <?php echo $this->__('Items %s to %s of %s total', $prodCount, $lastProd, $totalSize) ?>
+            <?php else: ?>
+                <strong><?php echo $this->__('%s Item(s)', count($items)) ?></strong>
+            <?php endif; ?>
+        </p>
+
+        <div class="limiter">
+            <label><?php echo $this->__('Show') ?></label>
+            <select onchange="setLocation(this.value)">
+            <?php foreach (Mage::getSingleton('Mage_Catalog_Block_Product_List_Toolbar')->getAvailableLimit() as  $_key=>$_limit): ?>
+                <option value="<?php echo Mage::getSingleton('Mage_Catalog_Block_Product_List_Toolbar')->getLimitUrl($_key) ?>"<?php if(Mage::getSingleton('Mage_Catalog_Block_Product_List_Toolbar')->isLimitCurrent($_key)): ?> selected="selected"<?php endif ?>>
+                    <?php echo $_limit ?>
+                </option>
+            <?php endforeach; ?>
+            </select> <?php echo $this->__('per page') ?>
+        </div>
+		
+		<div class='pages'>
+		<strong>Page:</strong>
+		<ol>
+        <?php 
+        $pageurl=$this->getClearUrl();
+		$pageurl.='?';
+		foreach ($_GET as $key => $value) {
+			if($key!='p'){
+				$pageurl.='&'.$key.'='.urlencode($value);
+			} 
+		}
+		
+        for ($i=1;$i<=$pageSize;$i++){
+        	if(isset($_GET['p'])){ 
+        		if($i!=$_GET['p']){
+        			echo '<li><a href="'.$pageurl.'&p='.$i.'">'.$i.'</a></li>';
+        		}
+        		if($i==$_GET['p']){
+					echo '<li class="current">'.$i.'</li>';
+				}
+        	}else{
+        		if($i==1){
+        			echo '<li class="current">'.$i.'</li>';
+				}else{
+					echo '<li><a href="'.$pageurl.'&p='.$i.'">'.$i.'</a></li>';
+				}
+        	}
+        } 
+        //echo $this->getPagerHtml(); ?>
+        </ol>
+		</div>
+    </div>
+
+    <?php if( Mage::getSingleton('Mage_Catalog_Block_Product_List_Toolbar')->isExpanded() ): ?>
+    <div class="sorter">
+        
+        <p class="view-mode">
+            <?php $_modes = Mage::getSingleton('Mage_Catalog_Block_Product_List_Toolbar')->getModes(); ?>
+            <?php if($_modes && count($_modes)>1): ?>
+            <label><?php echo $this->__('View as') ?>:</label>
+            <?php foreach (Mage::getSingleton('Mage_Catalog_Block_Product_List_Toolbar')->getModes() as $_code=>$_label): ?>
+                <?php if(Mage::getSingleton('Mage_Catalog_Block_Product_List_Toolbar')->isModeActive($_code)): ?>
+                    <strong title="<?php echo $_label ?>" class="<?php echo strtolower($_code); ?>"><?php echo $_label ?></strong>&nbsp;
+                <?php else: ?>
+                    <a href="<?php echo Mage::getSingleton('Mage_Catalog_Block_Product_List_Toolbar')->getModeUrl($_code) ?>" title="<?php echo $_label ?>" class="<?php echo strtolower($_code); ?>"><?php echo $_label ?></a>&nbsp;
+                <?php endif; ?>
+            <?php endforeach; ?>
+            <?php endif; ?>
+        </p>
+      
+    
+        <div class="sort-by">
+            <label><?php echo $this->__('Sort By') ?></label>
+            <select onchange="setLocation(this.value)">
+            <?php foreach(Mage::getSingleton('Mage_Catalog_Block_Product_List_Toolbar')->getAvailableOrders() as $_key=>$_order): ?>
+                
+                <option value="<?php echo Mage::getSingleton('Mage_Catalog_Block_Product_List_Toolbar')->getOrderUrl($_key, 'asc') ?>"<?php if(Mage::getSingleton('Mage_Catalog_Block_Product_List_Toolbar')->isOrderCurrent($_key)): ?> selected="selected"<?php endif; ?>>
+                    <?php echo $this->__($_order) ?>
+                </option>
+            <?php endforeach; ?>
+            	<option value="<? echo $pageurl.'&order=distance' ?>" <?php if(isset($_GET['order']) && $_GET['order']=='distance'): ?> selected="selected"<?php endif; ?>>
+            		<?php echo 'Distance' ?>
+            	</option>
+            </select>
+            <?php if(Mage::getSingleton('Mage_Catalog_Block_Product_List_Toolbar')->getCurrentDirection() == 'desc'): ?>
+                <a href="<?php echo Mage::getSingleton('Mage_Catalog_Block_Product_List_Toolbar')->getOrderUrl(null, 'asc') ?>" title="<?php echo $this->__('Set Ascending Direction') ?>"><img src="<?php echo $this->getSkinUrl('images/i_desc_arrow.gif') ?>" alt="<?php echo $this->__('Set Ascending Direction') ?>" class="v-middle" /></a>
+            <?php else: ?>
+                <a href="<?php echo Mage::getSingleton('Mage_Catalog_Block_Product_List_Toolbar')->getOrderUrl(null, 'desc') ?>" title="<?php echo $this->__('Set Descending Direction') ?>"><img src="<?php echo $this->getSkinUrl('images/i_asc_arrow.gif') ?>" alt="<?php echo $this->__('Set Descending Direction') ?>" class="v-middle" /></a>
+            <?php endif; ?>
+        </div>
+    </div>
+    <?php endif; ?>
+</div>
+<?php endif ?>
+
+			<?php
+			$_collectionSize = count($items);
+			$_columnCount = $this->getColumnCount(); 
+			$i=0;
+			$bounds='<script type="text/javascript">
+    				function getBounds(){';
+			$markers= '<script type="text/javascript">
+    				function getMarkers(){';
+    	?>
+		    <script type="text/javascript">
+		    	function addMarker(location,title) {
+		        marker = new google.maps.Marker({
+		            position: location,
+		            map: map,
+		            title: title
+		        });
+		    }	</script>
+			<?
+			if($this->getMode()!='list'){
+			foreach($items AS $_product){
+				?>
+				 <?php if ($i++%$_columnCount==0): ?>
+					<ul class="products-grid">
+			        <?php endif ?>
+				<li class="item<?php if(($i-1)%$_columnCount==0): ?> first<?php elseif($i%$_columnCount==0): ?> last<?php endif; ?>">
+                <a href="<?php echo $_product->getProductUrl() ?>" title="<?php echo $this->stripTags($this->getImageLabel($_product, 'small_image'), null, true) ?>" class="product-image"><img src="<?php echo $this->helper('catalog/image')->init($_product, 'small_image')->resize(135); ?>" width="135" height="135" alt="<?php echo $this->stripTags($this->getImageLabel($_product, 'small_image'), null, true) ?>" /></a>
+                <h2 class="product-name"><a href="<?php echo $_product->getProductUrl() ?>" title="<?php echo $this->stripTags($_product->getName(), null, true) ?>"><?php echo $_helper->productAttribute($_product, $_product->getName(), 'name') ?></a></h2>
+                <?php if($_product->getRatingSummary()): ?>
+                <?php echo $this->getReviewsSummaryHtml($_product, 'short') ?>
+                <?php endif; ?>
+                <?php echo $this->getPriceHtml($_product, true); ?>
+                <div class="actions">
+                	
+                    <?php if($_product->isSaleable()): ?>
+                        <button type="button" title="<?php echo $this->__('Add to Cart') ?>" class="button btn-cart" onclick="setLocation('<?php echo $this->getAddToCartUrl($_product) ?>')"><span><span><?php echo $this->__('Add to Cart') ?></span></span></button>
+                    <?php else: ?>
+                        <p class="availability out-of-stock"><span><?php echo $this->__('Out of stock') ?></span></p>
+                    <?php endif; ?>
+                    <ul class="add-to-links">
+                        <?php if ($this->helper('wishlist')->isAllow()) : ?>
+                            <li><a href="<?php echo $this->helper('wishlist')->getAddUrl($_product) ?>" class="link-wishlist"><?php echo $this->__('Add to Wishlist') ?></a></li>
+                        <?php endif; ?>
+                        <?php if($_compareUrl=$this->getAddToCompareUrl($_product)): ?>
+                            <li><span class="separator">|</span> <a href="<?php echo $_compareUrl ?>" class="link-compare"><?php echo $this->__('Add to Compare') ?></a></li>
+                        <?php endif; ?>
+                    </ul>
+                    
+                </div>
+            </li>
+           <?php if ($i%$_columnCount==0 || $i==$_collectionSize): ?>
+        </ul>
+        <?php endif ?>
+        <? } ?>
+         <?php
+			$attributes = Mage::getResourceModel('eav/entity_attribute_collection');
+			foreach($attributes AS $attribute){
+				if($attribute->getFrontendInput()=='youmap'){
+					$attr=$attribute->getAttributeCode();
+					foreach ($items as $prod) {
+					
+					$dataArray3= $prod->getData();
+					$location=$dataArray3[$attr];
+					$tmp=explode('/',$location);
+					$latlng=$tmp[0];
+					$name = mt_rand();
+					?>
+					<script type="text/javascript">
+						var markerlct<?php echo $name; ?>=new google.maps.LatLng(<?php echo $latlng; ?>);
+						var marker<?php echo $name; ?> = new google.maps.Marker({'position': markerlct<?php echo $name; ?>});
+						var title<?php echo $name; ?>="<?php echo $dataArray3["name"];?>";
+						
+					</script>
+					<?php 
+					$markers.= 'addMarker(markerlct'.$name.', title'.$name.' );';
+					$bounds.='bounds.extend(markerlct'.$name.'); map.fitBounds(bounds);';
+					}
+					}
+			}
+			 ?>
+				<?php
+			}
+?>
+		        <script type="text/javascript">decorateGeneric($$('ul.products-grid'), ['odd','even','first','last']);
+        		</script>
+        </ul>
+        </div>
+		    <script type="text/javascript">
+			var map;
+			var myLatlng = new google.maps.LatLng(<?php echo $myLct; ?>);
+			var bounds = new google.maps.LatLngBounds();
+			function initialize() {
+			  var mapOptions = {
+			    zoom: 16,
+			    center: new google.maps.LatLng(<?php echo $myLct; ?>),
+			    mapTypeId: google.maps.MapTypeId.ROADMAP
+			  };
+			
+			  map = new google.maps.Map(document.getElementById("map_canvas"),
+			      mapOptions);
+			    getMarkers();
+			    getBounds();
+				} 
+			
+	</script>
+
+    <?php // List mode ?>
+    <?php if($this->getMode()!='grid'): ?>
+    <?php $_iterator = 0; ?>
+    <ol class="products-list" id="products-list">
+    <?php foreach($items AS $_product): ?>
+        <li class="item<?php if( ++$_iterator == sizeof($_productCollection) ): ?> last<?php endif; ?>">
+            <?php // Product Image ?>
+            <a href="<?php echo $_product->getProductUrl() ?>" title="<?php echo $this->stripTags($this->getImageLabel($_product, 'small_image'), null, true) ?>" class="product-image"><img src="<?php echo $this->helper('catalog/image')->init($_product, 'small_image')->resize(135); ?>" width="135" height="135" alt="<?php echo $this->stripTags($this->getImageLabel($_product, 'small_image'), null, true) ?>" /></a>
+            <?php // Product description ?>
+            <div class="product-shop">
+                <div class="f-fix">
+                    <?php $_productNameStripped = $this->stripTags($_product->getName(), null, true); ?>
+                    <h2 class="product-name"><a href="<?php echo $_product->getProductUrl() ?>" title="<?php echo $_productNameStripped; ?>"><?php echo $_helper->productAttribute($_product, $_product->getName() , 'name'); ?></a></h2>
+                    <?php if($_product->getRatingSummary()): ?>
+                    <?php echo $this->getReviewsSummaryHtml($_product) ?>
+                    <?php endif; ?>
+                    <?php echo $this->getPriceHtml($_product, true) ?>
+                    <?php if($_product->isSaleable()): ?>
+                        <p><button type="button" title="<?php echo $this->__('Add to Cart') ?>" class="button btn-cart" onclick="setLocation('<?php echo $this->getAddToCartUrl($_product) ?>')"><span><span><?php echo $this->__('Add to Cart') ?></span></span></button></p>
+                    <?php else: ?>
+                        <p class="availability out-of-stock"><span><?php echo $this->__('Out of stock') ?></span></p>
+                    <?php endif; ?>
+                    <div class="desc std">
+                        <?php echo $_helper->productAttribute($_product, $_product->getShortDescription(), 'short_description') ?>
+                        <a href="<?php echo $_product->getProductUrl() ?>" title="<?php echo $_productNameStripped ?>" class="link-learn"><?php echo $this->__('Learn More') ?></a>
+                    </div>
+                    <ul class="add-to-links">
+                        <?php if ($this->helper('wishlist')->isAllow()) : ?>
+                            <li><a href="<?php echo $this->helper('wishlist')->getAddUrl($_product) ?>" class="link-wishlist"><?php echo $this->__('Add to Wishlist') ?></a></li>
+                        <?php endif; ?>
+                        <?php if($_compareUrl=$this->getAddToCompareUrl($_product)): ?>
+                            <li><span class="separator">|</span> <a href="<?php echo $_compareUrl ?>" class="link-compare"><?php echo $this->__('Add to Compare') ?></a></li>
+                        <?php endif; ?>
+                    </ul>
+                </div>
+            </div>
+        </li>
+    <?php endforeach; ?>
+    </ol>
+
+    <?php else: ?>
+
+    <?php // Grid Mode ?>
+
+    <?php $_collectionSize = $_productCollection->count() ?>
+    <?php $_columnCount = $this->getColumnCount(); ?>
+
+    <?php $i=0; foreach ($_productCollection as $_product): ?>
+
+
+        <?php endforeach ?>
+        <?php $markers.= '}</script>';
+        echo $markers;
+        $bounds.= '}</script>';
+		echo $bounds;
+        ?>
+    <?php endif; ?>
+
+<?php if(count($items)!=0): ?>
+<div class="toolbar">
+    <div class="pager">
+        <p class="amount">
+            <?php if($pageSize>1): ?>
+                                <?php echo $this->__('Items %s to %s of %s total', $prodCount, $lastProd, $totalSize) ?>
+            <?php else: ?>
+                <strong><?php echo $this->__('%s Item(s)', count($items)) ?></strong>
+            <?php endif; ?>
+        </p>
+
+        <div class="limiter">
+            <label><?php echo $this->__('Show') ?></label>
+            <select onchange="setLocation(this.value)">
+            <?php foreach (Mage::getSingleton('Mage_Catalog_Block_Product_List_Toolbar')->getAvailableLimit() as  $_key=>$_limit): ?>
+                <option value="<?php echo Mage::getSingleton('Mage_Catalog_Block_Product_List_Toolbar')->getLimitUrl($_key) ?>"<?php if(Mage::getSingleton('Mage_Catalog_Block_Product_List_Toolbar')->isLimitCurrent($_key)): ?> selected="selected"<?php endif ?>>
+                    <?php echo $_limit ?>
+                </option>
+            <?php endforeach; ?>
+            </select> <?php echo $this->__('per page') ?>
+        </div>
+		<div class='pages'>
+		<strong>Page:</strong>
+		<ol>
+        <?php 
+        $pageurl=$this->getClearUrl();
+		$pageurl.='?';
+		foreach ($_GET as $key => $value) {
+			if($key!='p'){
+				$pageurl.='&'.$key.'='.urlencode($value);
+			} 
+		}
+		
+        for ($i=1;$i<=$pageSize;$i++){
+        	if(isset($_GET['p'])){ 
+        		if($i!=$_GET['p']){
+        			echo '<li><a href="'.$pageurl.'&p='.$i.'">'.$i.'</a></li>';
+        		}
+        		if($i==$_GET['p']){
+					echo '<li class="current">'.$i.'</li>';
+				}
+        	}else{
+        		if($i==1){
+        			echo '<li class="current">'.$i.'</li>';
+				}else{
+					echo '<li><a href="'.$pageurl.'&p='.$i.'">'.$i.'</a></li>';
+				}
+        	}
+        } 
+        //echo $this->getPagerHtml(); ?>
+        </ol>
+		</div>
+    </div>
+
+    <?php if( Mage::getSingleton('Mage_Catalog_Block_Product_List_Toolbar')->isExpanded() ): ?>
+    <div class="sorter">
+        
+        <p class="view-mode">
+            <?php $_modes = Mage::getSingleton('Mage_Catalog_Block_Product_List_Toolbar')->getModes(); ?>
+            <?php if($_modes && count($_modes)>1): ?>
+            <label><?php echo $this->__('View as') ?>:</label>
+            <?php foreach (Mage::getSingleton('Mage_Catalog_Block_Product_List_Toolbar')->getModes() as $_code=>$_label): ?>
+                <?php if(Mage::getSingleton('Mage_Catalog_Block_Product_List_Toolbar')->isModeActive($_code)): ?>
+                    <strong title="<?php echo $_label ?>" class="<?php echo strtolower($_code); ?>"><?php echo $_label ?></strong>&nbsp;
+                <?php else: ?>
+                    <a href="<?php echo Mage::getSingleton('Mage_Catalog_Block_Product_List_Toolbar')->getModeUrl($_code) ?>" title="<?php echo $_label ?>" class="<?php echo strtolower($_code); ?>"><?php echo $_label ?></a>&nbsp;
+                <?php endif; ?>
+            <?php endforeach; ?>
+            <?php endif; ?>
+        </p>
+       
+    
+        <div class="sort-by">
+            <label><?php echo $this->__('Sort By') ?></label>
+            <select onchange="setLocation(this.value)">
+            <?php foreach(Mage::getSingleton('Mage_Catalog_Block_Product_List_Toolbar')->getAvailableOrders() as $_key=>$_order): ?>
+                <option value="<?php echo Mage::getSingleton('Mage_Catalog_Block_Product_List_Toolbar')->getOrderUrl($_key, 'asc') ?>"<?php if(Mage::getSingleton('Mage_Catalog_Block_Product_List_Toolbar')->isOrderCurrent($_key)): ?> selected="selected"<?php endif; ?>>
+                    <?php echo $this->__($_order) ?>
+                </option>
+            <?php endforeach; ?>
+            	<option value="<? echo $pageurl.'&order=distance' ?>" <?php if(isset($_GET['order']) && $_GET['order']=='distance'): ?> selected="selected"<?php endif; ?>>
+            		<?php echo 'Distance' ?>
+            	</option>
+            </select>
+            <?php if(Mage::getSingleton('Mage_Catalog_Block_Product_List_Toolbar')->getCurrentDirection() == 'desc'): ?>
+                <a href="<?php echo Mage::getSingleton('Mage_Catalog_Block_Product_List_Toolbar')->getOrderUrl(null, 'asc') ?>" title="<?php echo $this->__('Set Ascending Direction') ?>"><img src="<?php echo $this->getSkinUrl('images/i_desc_arrow.gif') ?>" alt="<?php echo $this->__('Set Ascending Direction') ?>" class="v-middle" /></a>
+            <?php else: ?>
+                <a href="<?php echo Mage::getSingleton('Mage_Catalog_Block_Product_List_Toolbar')->getOrderUrl(null, 'desc') ?>" title="<?php echo $this->__('Set Descending Direction') ?>"><img src="<?php echo $this->getSkinUrl('images/i_asc_arrow.gif') ?>" alt="<?php echo $this->__('Set Descending Direction') ?>" class="v-middle" /></a>
+            <?php endif; ?>
+        </div>
+    </div>
+    <?php endif; ?>
+</div>
+<?php endif ?>
+
+		        <?
+		        if($displayMap==1){
+		        	echo 'hiiiiiiiiiiiiiiiiiiiiiiiiii';
+				?>
+		        <script type="text/javascript">				
+				google.maps.event.addDomListener(window, "load", initialize);
+				</script> 
+				<?
+			}
+				?>

@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<layout version="0.1.0">
+    <catalog_product_view>
+        <reference name="content">
+        	<block type="core/template" name="map" before="boxes"  template="Yougento/Youmaps/map.phtml"></block>
+        </reference>
+    </catalog_product_view>
+    <default>
+    	<reference name="top.search">
+	        <action method="setTemplate">                
+	            <template>Yougento/Youmaps/mapsearch.phtml</template>
+	        </action>
+    	</reference>
+    </default>
+    <catalogsearch_result_index>
+    	<reference name="search_result_list">
+	        <action method="setTemplate">                
+	            <template>Yougento/Youmaps/mapsearchresults.phtml</template>
+	        </action>
+    	</reference>
+    	<reference name="catalogsearch.leftnav">
+	        <action method="setTemplate">                
+	            <template>Yougento/Youmaps/distancefilter.phtml</template>
+	        </action>
+    	</reference>
+    	<reference name="catalog.layer.state">
+	        <action method="setTemplate">                
+	            <template>Yougento/Youmaps/state.phtml</template>
+	        </action>
+    	</reference>
+    </catalogsearch_result_index>
+</layout>
